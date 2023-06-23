@@ -1,0 +1,43 @@
+---
+title: Control Sync Stored Procedures
+description: Overview of stored procedures for controlling the sync process
+---
+The stored procedures referred to in this section and throughout Control Sync refer to stored procedures in the Cyrious
+Control database. All the stored procedures currently used were created by Cyrious and found in their wiki, most are
+unmodified from their wiki state, though some may have been changed or parameters added for Control Sync's purposes.
+
+We have a `StoredProcedureService` which verifies that the stored procedures exist in the database. If they do not exist,
+the service will create them during the startup of Control Sync. You can also set `reset` to `true` in the [app config](/control-sync/config/)
+to force stored procedures to update by being deleted and re-created during startup.
+
+All stored procedures created this way implement `ICreateStoredProcedure`, have a const string `ProcedureName` property,
+and be listed in the `StoredProcedureService`'s `StoredProcedures` list. This allows the service to verify that the
+stored procedures exist in the database and create them if they do not.
+
+Below I will go over each currently implemented stored procedure, what it does, and where and how it's used.
+
+## <a href="https://control.cyriouswiki.com/sql_stored_procedure_-_convert_estimate_to_order" target="_blank">csp_ConvertEstimate</a>
+> The stored procedure can be used to convert an Estimate to an Order in Control
+
+This is used in `ControlOpportunityManager.ConvertEstimateToOrder` to convert an estimate to an order in Control after
+the estimate has been converted to an order in Salesforce. This happens when an opportunity is marked as `Closed Won`.
+
+This is currently a hard coded check in `ControlOpportunityManager.ManageOpportunityData`, which is called by the `OpportunityTopicManager`
+when data is updated in Salesforce.
+
+## <a href="https://control.cyriouswiki.com/sql_stored_procedure_-_convert_estimate_to_order" target="https://control.cyriouswiki.com/sql_stored_procedure_-_import_estimate?s[]=csp&s[]=importestimate">csp_ImportEstimate</a>
+> The stored procedure can be used to add an estimate in Control
+
+This is used in `ControlOpportunityManager.InsertOrUpdateEstimate` when an opportunity is approved to create a new Estimate in Control
+from the opportunity data in Salesforce. Called from `ControlOpportunityManager.ManageOpportunityData`, which is called by the
+`OpportunityTopicManager` when data is updated in Salesforce.
+
+When an opportunity is updated (as in, it already exists in Control), we don't use a store procedure and instead update the data manually.
+
+## <a href="https://control.cyriouswiki.com/sql_stored_procedure_-_import_line_item?s[]=csp&s[]=importlineitem" target="_blank">csp_ImportLineItem</a>
+> This stored procedure imports a line item into an existing order or estimate.
+
+This is solely used by the above stored procedure, [`csp_ImportEstimate`](/control-sync/stored-procedures/#csp_importestimate).
+It's not used directly in Control Sync, but is required for creating Estimates from Salesforce data. We have it managed by
+the `StoredProcedureService` so that it's available for csp_ImportEstimate to use and because we felt like it was a better
+practice to have one stored procedure per file.

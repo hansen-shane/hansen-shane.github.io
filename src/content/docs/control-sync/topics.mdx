@@ -1,0 +1,28 @@
+---
+title: Control Sync PushTopics
+description: Overview of Salesforce Topics
+---
+
+PushTopics are (deprecated) <a href="https://developer.salesforce.com/docs/atlas.en-us.api_streaming.meta/api_streaming/pushtopic_events_intro.htm" target="_blank">Salesforce objects</a>
+that are created by Control Sync during startup (either the very first startup or any startup with [`reset`](/control-sync/config/#app-settings) set to true). Topics
+are used to listen for data changes from Salesforce and react to them.
+
+:::note
+PushTopics are deprecated by Salesforce in the sense that they are no longer recommended for new development. They will
+not gain new functionality or be improved in the future. However, they are still supported and used by Control Sync.
+:::
+
+## Defining a PushTopic
+PushTopics are defined in ControlSync by creating a class that inherits from `ITopicHandler`. `ITopicHandler` classes
+need to implement both `CreateTopic` and `OnMessage` that are used to create the PushTopic and handle the incoming
+messages respectively.
+
+After definition, topics need to be added to the autofac container builder and then to the `_topics` array in the TopicManagerService.
+Topics should have a public static string `Key` that they use to identify themselves in the `_topics` array. This key is
+used to start and stop topics and identify them when they receive a message.
+
+After setting up PushTopics in Control Sync, you'll need to add your new topic to the `streams.json` file in `hansen-sync`,
+then restart the service.
+
+After that, your new PushTopic will be created and started when Control Sync starts up and listened to by `hansen-sync`,
+then the `OnMessage` method will be called when a message is received.

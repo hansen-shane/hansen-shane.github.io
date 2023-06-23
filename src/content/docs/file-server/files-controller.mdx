@@ -1,0 +1,50 @@
+---
+title: File Server Files Controller
+description: Overview of the files controller
+---
+The files controller is the main controller for the file server API. It handles all requests to the API, and is responsible
+for pretty much everything that the file server is used for. It handles requests to get the file system, upload files,
+download files, and delete files.
+
+## Directory Structure
+The first thing the files controller does is check to make sure it has access to the Cyrious Control file system. If it doesn't,
+it will log an error and any requests trying to get files will fail. The file path is hard coded in the [config](/file-server/config/)
+file and rarely changes, but could change if the IP address of the NAS that the Cyrious Control file system is stored on
+changes.
+
+If this happens enough that it annoys you, you could consider changing file server to check the database for this path instead.
+This is done by Control Sync in `ControlFolderManagementService.GetFolderDocumentRoot`, but was not done in File Server
+because it is not a common occurrence.
+
+Below is what the expected file structure looks like
+
+import FileTree from '../../../components/file-tree.astro';
+
+<FileTree>
+    - [NAS server IP]/Control/Documents/
+        - Estimate/  This is where existing Estimates are found
+        - Order/  This is where existing Orders are found
+        - Default Folders/  This is where the default file structures for new orders and estimates are stored
+            - Order/
+            - Estimate/
+</FileTree>
+
+## Session Validation
+The files controller requests all require the Salesforce session token to be passed as part of the request. Then we cal
+`FilesController.ValidKey` to validate that the session is legitimate before allowing the request to continue.
+
+To do this, we call the Salesforce SOAP API pretending to be the user that is logged in and requesting their information.
+If the session is valid, we will get back the user's information. If it is not valid, we will get back an error. If the
+session belongs to a valid user, we cache their session token as valid for 8 hours to prevent this fairly expensive call
+from being made every time a request is made.
+
+## Displaying the File System
+Another piece of information that Salesforce sends us is the ID of the order or estimate that the user is currently viewing.
+We use this to find the path to the file system for that order or estimate. This depends on us having the ID of the Salesforce
+object mapped to the Control object in our `IdReference` table. If we don't have this mapping, we won't be able to find
+the file system, and we'll error out. We should always have this mapping though, unless synchronization is broken.
+
+### `create-structure/{key}`
+If we can't find the file system because it does not exist, we allow the user to create the file system themselves. This is
+done simply by copying the Default Folders folder to the correct location and naming it appropriately. This shouldn't happen
+as much anymore, but used to be necessary because Control Sync wouldn't always successfully do this when it was supposed to.

@@ -1,0 +1,42 @@
+---
+title: Control Sync Config
+description: Overview of the Control Sync config file
+---
+
+Control Sync uses .NET 4.5's config file system. The config file is an XML file located in the same directory as the Control
+Sync executable and is named `App.config` or `App.release.config` depending on if you're referencing the production config
+file or the debug config.
+
+## App Settings
+The following keys are available `appSettings` in the Control Sync config file:
+- **salesforce_client_id**: The client ID of the Salesforce Connected App
+- **salesforce_client_secret**: The client secret of the Salesforce Connected App
+- **salesforce_acc_username**: The username of the Salesforce user to use for authentication
+- **salesforce_acc_password**: The password of the Salesforce user to use for authentication
+- **salesforce_acc_security_token**: The security token of the Salesforce user to use for authentication. Obtained from
+user's settings -> generate new security token -> sent to user's email.
+- **salesforce_login_url**: The URL to use for Salesforce authentication. Used to automatically get the bearer token required
+for the Salesforce REST API, but mainly required for passing to `hansen-stream` so it can subscribe to topics.
+- **salesforce_soap_login_url**: The URL to use for Salesforce SOAP authentication. Used any time we need to use the SOAP API.
+- **streaming-api-command-start**: The command to run when starting `hansen-stream`. We use pm2 to run `hansen-stream` and
+currently this command is configured to start pm2 with the `hansen-stream` process.
+- **streaming-api-command-stop**: The command to run when stopping `hansen-stream`. This is currently configured to stop
+the `hansen-stream` process in pm2.
+- **reset**: Whether to drop and recreate stored procedures and Salesforce PushTopics when starting Control Sync. This is
+useful for development, but should be set to false in production to prevent unnecessary startup delays.
+- **cyrious_doc_dir**: This is pretty much only used in debugging. It's the directory where Cyrious documents are stored.
+This is normally pulled directly from the Cyrious database, but if you're debugging and don't have access to the Cyrious
+database, you can set this to a directory on your local machine and Control Sync will use that instead.
+
+## Connection Strings
+The following connection strings are available in the Control Sync config file:
+- **Control**: The SQL server connection string for the Cyrious Control database. This is the actual Cyrious Control database
+that is used by the Cyrious Control application.
+- **ControlSync**: The SQL server connection string for the Control Sync database. This database is used only by Control
+Sync to manage data related to synchronizing data between Salesforce and Control, such as ID mappings and last poll time.
+
+## log4net
+This section is the log4net configuration. It's pretty standard and you can find more information about it on the
+<a href="https://logging.apache.org/log4net/" target="_blank">log4net website</a>. The only thing that's really worth
+noting is that we use rolling error and console log files. The error log files get to use more storage because they're
+generally more important and verbose.

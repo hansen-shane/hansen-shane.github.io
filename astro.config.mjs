@@ -5,21 +5,42 @@ import starlight from '@astrojs/starlight';
 export default defineConfig({
   integrations: [
     starlight({
-      title: 'My Docs',
-      social: {
-        github: 'https://github.com/withastro/starlight',
-      },
+      title: 'Control Sync',
       sidebar: [
         {
-          label: 'Guides',
+          label: 'Overview',
           items: [
-            // Each item here is one entry in the navigation menu.
-            { label: 'Example Guide', link: '/guides/example/' },
-          ],
+            { label: 'Introduction', link: '/overview/introduction/' },
+          ]
         },
         {
-          label: 'Reference',
-          autogenerate: { directory: 'reference' },
+          label: 'Control Sync',
+          items: [
+            { label: 'Architecture', link: '/control-sync/architecture/' },
+            { label: 'Config', link: '/control-sync/config/' },
+            { label: 'PushTopics', link: '/control-sync/topics/' },
+            { label: 'Stored Procedures', link: '/control-sync/stored-procedures/' },
+            { label: 'Opportunity Lifecycle', link: '/control-sync/opportunity-lifecycle/' },
+            { label: 'Troubleshooting', link: '/control-sync/troubleshooting/' },
+          ]
+        },
+        {
+          label: 'File Server',
+          items: [
+            { label: 'Architecture', link: '/file-server/architecture/' },
+            { label: 'Config', link: '/file-server/config/' },
+            { label: 'Files Controller', link: '/file-server/files-controller/' },
+            { label: 'Web View', link: '/file-server/web-view/' },
+            { label: 'Troubleshooting', link: '/file-server/troubleshooting/' },
+          ]
+        },
+        {
+          label: 'Hansen Stream',
+          items: [
+            { label: 'Architecture', link: '/hansen-stream/architecture/' },
+            { label: 'Config', link: '/hansen-stream/config/' },
+            { label: 'Troubleshooting', link: '/hansen-stream/troubleshooting/' },
+          ]
         },
       ],
     }),

@@ -1,0 +1,22 @@
+---
+title: Introduction
+description: What is Control Sync?
+---
+
+**Hansen Control Sync** is a service used to synchronize data between <a href="https://www.cyrious.com/products/control/" target="_blank">Cyrious Control</a> and <a href="https://www.salesforce.com/" target="_blank">Salesforce</a>.
+It is primarily used to keep customer data in sync between the two systems, but it can also be used to sync other data as well.
+
+Control Sync is made up of three modules that work together to synchronize data between the two systems.
+
+## Control Sync Modules
+- **[Control Sync](/control-sync/architecture/) (HansenControlSync)**
+	- This is the main application that handles synchronizing data between the two systems.
+- **[File server](/file-server/architecture/) (HansenControlSync.FileServer)**
+	- This is the file server API and front end that allows users to navigate files from Salesforce, as well as uploading files to Control Sync and downloading them locally.
+- **[Hansen stream](/hansen-stream/architecture/) (node app)**
+	- This is a very small node application that runs along side control sync. It hosts a small TCP server that Control Sync connects to and it listens for events from Salesforce through cometd. When Salesforce says a record was updated, it tells Control Sync through its TCP connection so it can react accordingly.
+	- _Note:_ Hansen stream lives in a separate repository from the other three pieces, which are all in one C# project file.
+
+## Additionally
+- **Console (HansenControlSync.Console)**
+    - This console application is mainly just for testing or one off operations. It conveniently has access to the same libraries as the main app, so it can be used to do things like manually sync data or test Salesforce connections or data.

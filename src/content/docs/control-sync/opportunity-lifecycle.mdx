@@ -1,0 +1,38 @@
+---
+title: Control Sync Opportunities
+description: Overview of the opportunity lifecycle
+---
+Opportunities in Salesforce are both Estimates and Orders in Cyrious Control, depending on the stage of the opportunity.
+
+When an update comes from Salesforce, the lifecycle state is managed by `ControlOpportunityManager.ManageOpportunityData`,
+which has a map of the different available stages and what Control Sync should do at each one.
+
+:::caution
+Once an opportunity is marked as won, lost, or voided, it can no longer be updated in Cyrious Control.
+At these stages, a new opportunity must be created in Salesforce.
+
+This is a limitation of the way that Cyrious Control works.
+:::
+
+## Insert/Update Stages
+At these stages, the estimate is only inserted or updated in Cyrious Control. These are early stages of the opportunity lifecycle.
+- Design
+- Design - For Review
+- Proposal
+- Awaiting Approval
+- Estimating - Estimate for Review
+- Estimating - Estimate Reviewed
+- Estimating - Approved
+
+## Closed Won Stage
+At the `Closed Won` stage, the opportunity is converted to an order in Cyrious Control.
+
+## Closed Lost Stage
+At the `Closed Lost` stage, the order is marked as lost in Cyrious Control.
+
+## Void Stage
+At the `Needs Analysis` stage, the order is marked as void in Cyrious Control.
+
+## Unknown Stage
+If a stage is added to Salesforce and not handled by this method, the update will be ignored (not even inserting or updating).
+There will also be a error log indicating that the stage is not handled.

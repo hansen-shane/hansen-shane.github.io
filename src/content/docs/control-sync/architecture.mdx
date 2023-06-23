@@ -1,0 +1,92 @@
+---
+title: Control Sync
+description: Overview of the main Control Sync app
+---
+
+Control Sync is a Windows service that runs in the background on a Hansen Signs server. It is the main service that synchronizes
+data between Cyrious Control and Salesforce.
+
+Control Sync is configured through the Windows task scheduler on the host machine to automatically
+restart daily to deal with occasional seemingly random synchronization issues that were occurring.
+
+:::note
+These errors may have been occurring because of the CometD service in Control Sync which has since been moved to hansen-stream.
+It's unclear if the service still needs to be occasionally restarted or not.
+:::
+
+## IDs
+Control Sync uses IDs to keep track of data in both Control and Salesforce. These IDs are used to match data between the two
+systems and are stored in the `IdReference` table of the Control Sync database. We have methods that allow us to convert
+between the two IDs and store them in the database. We also have to try to keep in mind that data in Control might not
+be in Salesforce and try to find it in the Control DB if we don't find a mapping in the `IdReference` table, before we
+create a new record in Control, if it makes sense to do that.
+
+## Data Synchronization: Salesforce to Control
+Control Sync gets data change notifications from hansen-stream which is a node app that uses CometD to poll for changes
+in Salesforce.
+
+When a change is detected, Control Sync will check for the corresponding data in Control and update it
+if it exists or add it if it doesn't. It does this by having a direct connection to the Control database and using the
+<a href="http://control.cyriouswiki.com/SQL+Bridge" target="_blank">Cyrious Control SQL Bridge</a> to make changes to the database in a way that
+Control can understand and pick up on automatically in real-time.
+
+[Topics](/control-sync/topics/) are Salesforce objects that can be subscribed to in order to listen for data updates. Topics
+are created and updated through Control Sync but subscribed to through hansen-stream, which forwards the information to
+Control Sync.
+
+
+## Data Synchronization: Control to Salesforce
+Control Sync also synchronizes data from Control to Salesforce. This is done by querying the Control database for
+changes in the data and then updating the corresponding Salesforce objects.
+
+Control Sync uses `ControlDbPollService` to iterate through classes that implement `IControlPoll` and are registered in
+its constructor (at the time of this writing, just `TransactionHeaderPoller`) and executes their `PollForUpdates` method,
+which is up to the implementing class to determine how to handle, but generally polls related DBs for changes and executes
+update code if something new has been added or updated since the last poll time.
+
+`ControlDbPollService` also handles updating the last poll time in the database for each `IControlPoll` object that runs,
+allowing the next poll to only check for changes since the last poll time. `ControlDbPollService` currently runs every
+10 seconds, which is determined by the constant class variable `PollTimeoutInMs`.
+
+Generally, any `IControlPoll` class should filter out changes that come from Salesforce to prevent infinite update cycles.
+This is possible because updates that come from Salesforce should indicate that their `ModifiedByComputer` is Salesforce,
+allowing the polling query to ignore them.
+
+## Control Entities
+To make it easier to sync data to and from Control, several classes have been created from their Control database counterparts.
+These classes are in `HansenControlSync/Services/Control/ControlEntities` and were manually created to match the database. If
+the database changes, these classes will need to be updated to match, though generally only the properties we care about need to
+match. Many of the entities will have all the properties from their respective table but not use them all because we didn't
+know what we needed at the time.
+
+## Stored Procedures
+Control Sync uses [many stored procedures](/control-sync/stored-procedures/) to make changes to the Control database. These stored procedures are located in
+`HansenControlSync/Services/Control/StoredProcedures` and are generally named after the procedure they contain. The `StoredProcedureService`
+in the same folder is responsible for verifying each procedure exists and creating it if not.
+
+The `StoredProcedureService` can also be used to drop the existing procedures and recreate them if needed, this can be
+done manually by setting the `reset` variable in the [config](/control-sync/config/) file to `true` and starting the service.
+Just make sure you change it back to `false` before starting the service a second time or it will drop the procedures and
+recreate them again unnecessarily. This can be useful for debugging stored procedures.
+
+:::caution
+The `reset` variable also deletes and recreates Topics in Salesforce. This shouldn't have any adverse effects, but will
+make the startup process slower.
+:::
+
+## Stream Client
+The stream client is a service responsible for managing [hansen-stream](/hansen-stream/architecture/). It is responsible for
+starting and stopping the service and restarting it if it crashes. It also connects to hansen-stream's TCP server and notifies
+individual `TopicManagers` when data they care about gets changed.
+
+This functionality used to be built in to Control Sync, but was moved to hansen-stream to make it easier to manage and
+due to the CometD service completely breaking and no longer receiving updates from Salesforce. This was the chosen solution
+over updating all of HansenControlSync and its dependencies to the latest versions of .NET, which seemed to be the only
+way to get CometD to start working in .NET again.
+
+## Logging
+Control Sync logs both standard log output and error log output through Log4Net. The log files will be located in the same
+directory as the executable and both types of log files will roll so they don't consume too much disk space, but the error
+logs are currently allowed to consume more space than the normal logs to help track down errors that may have occurred in the past.
+
+All of the various settings for the log files are available to be changed in the [config](/control-sync/config/) file.
